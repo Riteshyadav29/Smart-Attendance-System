@@ -20,19 +20,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // ✅ Only get count, no need to fetch rows
-    const { count, error } = await supabase
+    // Get attendance count for the class
+    const { data, error } = await supabase
       .from("attendance_records")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("class_id", classId)
       .in("status", ["present", "late"])
 
     if (error) {
-      console.error("Supabase error:", error.message)
       return NextResponse.json({ error: "Failed to get attendance count" }, { status: 500 })
     }
 
-    return NextResponse.json({ count: count || 0 })
+    return NextResponse.json({ count: data?.length || 0 })
   } catch (error) {
     console.error("Error getting attendance count:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

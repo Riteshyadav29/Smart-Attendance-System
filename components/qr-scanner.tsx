@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { QrCode, Camera, CheckCircle, XCircle, Clock, AlertTriangle, Smartphone, RotateCcw } from "lucide-react"
+import { QrCode, Camera, CheckCircle, XCircle, Clock, AlertTriangle, Smartphone } from "lucide-react"
 import jsQR from "jsqr"
 
 interface ScanResult {
@@ -24,34 +23,17 @@ export function QRScanner() {
   const [manualToken, setManualToken] = useState("")
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [scanCount, setScanCount] = useState(0)
-  const [lastProcessedToken, setLastProcessedToken] = useState<string>("")
-  const [lastProcessedTime, setLastProcessedTime] = useState<number>(0)
-  const [hasSuccessfulScan, setHasSuccessfulScan] = useState<boolean>(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const scanIntervalRef = useRef<NodeJS.Timeout>()
-  const { toast } = useToast()
 
   // Start camera for QR scanning
   const startCamera = async () => {
     try {
       setScanResult(null)
-      setHasSuccessfulScan(false)
-      
-      // Check if camera is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Camera not supported on this device")
-      }
-
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment", // Use back camera on mobile
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
+        video: { facingMode: "environment" }, // Use back camera on mobile
       })
 
       if (videoRef.current) {
@@ -59,33 +41,15 @@ export function QRScanner() {
         streamRef.current = stream
         setIsScanning(true)
 
-        // Wait for video to be ready before starting scan
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current) {
-            videoRef.current.play()
-            // Start scanning for QR codes
-            scanIntervalRef.current = setInterval(scanQRCode, 1000) // Scan every 1 second to prevent rapid scanning
-          }
-        }
+        // Start scanning for QR codes
+        scanIntervalRef.current = setInterval(scanQRCode, 500) // Scan every 500ms
       }
     } catch (error) {
       console.error("Error accessing camera:", error)
-      let errorMessage = "Unable to access camera. Please check permissions or use manual entry."
-      
-      if (error instanceof Error) {
-        if (error.name === "NotAllowedError") {
-          errorMessage = "Camera access denied. Please allow camera permissions and try again."
-        } else if (error.name === "NotFoundError") {
-          errorMessage = "No camera found on this device. Please use manual entry."
-        } else if (error.name === "NotSupportedError") {
-          errorMessage = "Camera not supported on this device. Please use manual entry."
-        }
-      }
-      
       setScanResult({
         success: false,
-        error: errorMessage,
-        message: "Camera access failed",
+        error: "Unable to access camera. Please check permissions or use manual entry.",
+        message: "Camera access denied",
       })
     }
   }
@@ -104,7 +68,7 @@ export function QRScanner() {
 
   // Scan QR code from video feed
   const scanQRCode = async () => {
-    if (!videoRef.current || !canvasRef.current || isProcessing || hasSuccessfulScan) return
+    if (!videoRef.current || !canvasRef.current || isProcessing) return
 
     const video = videoRef.current
     const canvas = canvasRef.current
@@ -122,17 +86,7 @@ export function QRScanner() {
       const code = jsQR(imageData.data, imageData.width, imageData.height)
 
       if (code && code.data) {
-        const now = Date.now()
-        
-        // Prevent processing the same token multiple times or too frequently
-        if (code.data === lastProcessedToken || (now - lastProcessedTime) < 3000) {
-          return
-        }
-        
         console.log("[v0] QR code detected:", code.data)
-        setScanCount(prev => prev + 1)
-        setLastProcessedToken(code.data)
-        setLastProcessedTime(now)
         await processToken(code.data)
       }
     } catch (error) {
@@ -160,64 +114,31 @@ export function QRScanner() {
       console.log("[v0] Scan response:", data)
 
       if (response.ok) {
-        // Set success state immediately to prevent any flickering
-        setHasSuccessfulScan(true)
-        
         setScanResult({
           success: true,
           status: data.status,
           message: data.message,
         })
 
-        // Show success toast
-        toast({
-          title: "✅ Attendance Marked Successfully!",
-          description: data.message,
-          variant: "default",
-        })
-
-        // Stop scanning immediately on successful scan
+        // Stop scanning on successful scan
         if (isScanning) {
           stopCamera()
         }
         setManualToken("")
-        setLastProcessedToken("") // Reset for next scan
-        setLastProcessedTime(0)
       } else {
-        // Only show error if we haven't had a successful scan yet
-        if (!hasSuccessfulScan) {
-          setScanResult({
-            success: false,
-            error: data.error,
-            message: "Scan failed",
-          })
-
-          // Show error toast
-          toast({
-            title: "Scan Failed",
-            description: data.error || "Unable to process QR code",
-            variant: "destructive",
-          })
-        }
+        setScanResult({
+          success: false,
+          error: data.error,
+          message: "Scan failed",
+        })
       }
     } catch (error) {
       console.error("[v0] Error processing token:", error)
-      
-      // Only show error if we haven't had a successful scan yet
-      if (!hasSuccessfulScan) {
-        setScanResult({
-          success: false,
-          error: "Network error. Please try again.",
-          message: "Connection failed",
-        })
-
-        // Show error toast
-        toast({
-          title: "Connection Error",
-          description: "Network error. Please check your connection and try again.",
-          variant: "destructive",
-        })
-      }
+      setScanResult({
+        success: false,
+        error: "Network error. Please try again.",
+        message: "Connection failed",
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -227,19 +148,6 @@ export function QRScanner() {
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     processToken(manualToken)
-  }
-
-  // Reset scanner
-  const resetScanner = () => {
-    setScanResult(null)
-    setManualToken("")
-    setScanCount(0)
-    setLastProcessedToken("")
-    setLastProcessedTime(0)
-    setHasSuccessfulScan(false)
-    if (isScanning) {
-      stopCamera()
-    }
   }
 
   // Cleanup on unmount
@@ -320,7 +228,7 @@ export function QRScanner() {
                     <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
                       <div className="bg-white rounded-lg p-3 flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span className="text-sm">Processing QR Code...</span>
+                        <span className="text-sm">Processing...</span>
                       </div>
                     </div>
                   )}
@@ -328,10 +236,6 @@ export function QRScanner() {
                 <div className="flex gap-2">
                   <Button onClick={stopCamera} variant="outline" className="flex-1 bg-transparent">
                     Stop Scanner
-                  </Button>
-                  <Button onClick={resetScanner} variant="outline" className="flex-1 bg-transparent">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset
                   </Button>
                 </div>
               </div>
@@ -380,56 +284,27 @@ export function QRScanner() {
 
       {/* Result Display */}
       {scanResult && (
-        <Card className={`border-2 ${getResultColor()} ${scanResult.success ? 'animate-pulse' : ''}`}>
+        <Card className={`border-2 ${getResultColor()}`}>
           <CardContent className="pt-6">
             <div className="text-center space-y-3">
               {getResultIcon()}
               <div>
-                <h3 className="font-bold text-xl">
-                  {scanResult.success ? "✅ Attendance Marked Successfully!" : "❌ Scan Failed"}
-                </h3>
-                <p className="text-base font-medium">{scanResult.message}</p>
-                {scanResult.error && !scanResult.success && <p className="text-xs mt-1 opacity-75">{scanResult.error}</p>}
+                <h3 className="font-semibold text-lg">{scanResult.success ? "Attendance Marked!" : "Scan Failed"}</h3>
+                <p className="text-sm">{scanResult.message}</p>
+                {scanResult.error && <p className="text-xs mt-1 opacity-75">{scanResult.error}</p>}
               </div>
               {scanResult.success && scanResult.status && (
                 <Badge
                   variant="outline"
                   className={
                     scanResult.status === "present"
-                      ? "bg-green-100 text-green-800 border-green-300 text-lg px-4 py-2"
-                      : "bg-yellow-100 text-yellow-800 border-yellow-300 text-lg px-4 py-2"
+                      ? "bg-green-100 text-green-800 border-green-300"
+                      : "bg-yellow-100 text-yellow-800 border-yellow-300"
                   }
                 >
-                  Status: {scanResult.status.toUpperCase()}
+                  Marked as {scanResult.status}
                 </Badge>
               )}
-              {scanResult.success && (
-                <div className="pt-2">
-                  <p className="text-sm text-green-600 font-medium mb-3">
-                    Your attendance has been recorded successfully!
-                  </p>
-                  <Button onClick={resetScanner} variant="outline" size="sm" className="bg-green-50 hover:bg-green-100">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Scan Another QR Code
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Scan Counter */}
-      {isScanning && !hasSuccessfulScan && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <p className="text-sm text-blue-700">
-                Scanning... {scanCount > 0 && `(${scanCount} attempts)`}
-              </p>
-              <div className="mt-2 w-full bg-blue-200 rounded-full h-1">
-                <div className="bg-blue-600 h-1 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-              </div>
             </div>
           </CardContent>
         </Card>

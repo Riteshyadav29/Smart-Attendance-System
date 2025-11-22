@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
-import { StudentNav } from "@/components/student-nav"
 import Link from "next/link"
 import { ArrowLeft, QrCode } from "lucide-react"
 import { QRScanner } from "@/components/qr-scanner"
@@ -67,7 +66,6 @@ export default async function ScanPage() {
               </p>
             </div>
           </div>
-          <StudentNav />
         </div>
 
         {/* QR Scanner */}

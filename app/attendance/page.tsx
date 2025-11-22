@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { AttendanceInterface } from "@/components/attendance-interface"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ExportButtons } from "@/components/export-buttons"
 import Link from "next/link"
 import { ArrowLeft, Calendar } from "lucide-react"
 
@@ -59,7 +58,6 @@ export default async function AttendancePage() {
               </p>
             </div>
           </div>
-          <ExportButtons />
         </div>
 
         {/* Today's Classes */}

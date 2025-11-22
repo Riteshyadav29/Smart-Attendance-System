@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { AttendanceAnalytics } from "@/components/attendance-analytics"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ExportButtons } from "@/components/export-buttons"
 import Link from "next/link"
 import { ArrowLeft, BarChart3, TrendingUp, Users, Calendar } from "lucide-react"
 
@@ -89,7 +88,6 @@ export default async function AnalyticsPage() {
               <p className="text-gray-600 dark:text-gray-300">Comprehensive attendance reports and insights</p>
             </div>
           </div>
-          <ExportButtons />
         </div>
 
         {/* Overview Stats */}

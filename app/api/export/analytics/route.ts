@@ -310,3 +310,4 @@ async function generateDailyAttendance(supabase: any, courseId: string | null, s
 
   return Array.from(dateMap.values()).sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime())
 }
+

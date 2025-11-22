@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
-import { StudentNav } from "@/components/student-nav"
 import Link from "next/link"
 import { Users, BookOpen, Calendar, BarChart3, QrCode } from "lucide-react"
 
@@ -45,10 +44,7 @@ export default async function DashboardPage() {
                 : "Manage student attendance and analytics efficiently."}
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            {student && <StudentNav />}
-            <LogoutButton />
-          </div>
+          <LogoutButton />
         </div>
 
         {/* Stats Cards - Only show for non-students */}
@@ -88,45 +84,25 @@ export default async function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Student-specific actions */}
+          {/* Student-specific QR Scanner */}
           {student && (
-            <>
-              <Card className="bg-white/90 backdrop-blur-sm hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                    <QrCode className="h-5 w-5" />
-                    Scan QR Code
-                  </CardTitle>
-                  <CardDescription>Scan QR code to mark your attendance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Link href="/scan">
-                      <QrCode className="mr-2 h-4 w-4" />
-                      Open QR Scanner
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/90 backdrop-blur-sm hover:shadow-lg transition-shadow duration-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <Calendar className="h-5 w-5" />
-                    My Attendance
-                  </CardTitle>
-                  <CardDescription>View your attendance history and statistics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-                    <Link href="/student-attendance">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      View Attendance
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </>
+            <Card className="bg-white/90 backdrop-blur-sm hover:shadow-lg transition-shadow duration-200 md:col-span-2 lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                  <QrCode className="h-5 w-5" />
+                  Scan QR Code
+                </CardTitle>
+                <CardDescription>Scan QR code to mark your attendance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Link href="/scan">
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Open QR Scanner
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* Admin/Teacher actions - Only show for non-students */}
